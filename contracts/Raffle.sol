@@ -31,7 +31,7 @@ contract Raffle {
     // Winner to be selected every x minutes -> completly automated
     // Chainlink Oracle -> Randomness, Automatic execution (Chainlink Keeper)
 
-    function getEntraceFee() public view returns (uint256) {
+    function getEntranceFee() public view returns (uint256) {
         return i_entranceFee;
     }
 

@@ -13,3 +13,5 @@ typechain
 
 # don't push the environment vars!
 .env
+
+gas-report.txt
