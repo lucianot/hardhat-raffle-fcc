@@ -16,7 +16,13 @@ const { developmentChains } = require("../../helper-hardhat-config")
           })
 
           describe("constructor", async function () {
-              it("initializes the raffle correctly", async function () {
+              it("initializes VRF coordinator correctly", async function () {
+                  const expectedVrfCoordinator = vrfCoordinatorV2Mock.address
+                  const actualVrfCoordinator = await raffle.getVrfCoordinator()
+                  assert.equal(actualVrfCoordinator, expectedVrfCoordinator)
+              })
+
+              it("initializes entrance fee correctly", async function () {
                   const expectedEntranceFee = ethers.utils.parseEther("0.01")
                   const actualEntranceFee = await raffle.getEntranceFee()
                   assert.equal(actualEntranceFee.toString(), expectedEntranceFee.toString())
