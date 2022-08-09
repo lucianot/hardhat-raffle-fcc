@@ -5,13 +5,13 @@ const { developmentChains } = require("../../helper-hardhat-config")
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Raffle Unit Tests", async function () {
-          let raffle, raffleEntranceFee, deployer
+          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer
 
           beforeEach(async function () {
               deployer = (await getNamedAccounts()).deployer
               await deployments.fixture(["all"])
               raffle = await ethers.getContract("Raffle", deployer)
-              //   vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
+              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
               raffleEntranceFee = await raffle.getEntranceFee()
           })
 
