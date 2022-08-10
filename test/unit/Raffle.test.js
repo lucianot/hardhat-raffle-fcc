@@ -1,11 +1,12 @@
 const { assert, expect } = require("chai")
 const { getNamedAccounts, deployments, ethers, network } = require("hardhat")
-const { developmentChains } = require("../../helper-hardhat-config")
+const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
 
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Raffle Unit Tests", async function () {
-          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer
+          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer, interval
+          const chainId = network.config.chainId
 
           beforeEach(async function () {
               deployer = (await getNamedAccounts()).deployer
@@ -13,6 +14,7 @@ const { developmentChains } = require("../../helper-hardhat-config")
               raffle = await ethers.getContract("Raffle", deployer)
               vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
               raffleEntranceFee = await raffle.getEntranceFee()
+              interval = await raffle.getInterval()
           })
 
           describe("constructor", async function () {
@@ -33,6 +35,11 @@ const { developmentChains } = require("../../helper-hardhat-config")
                   const actualState = await raffle.getRaffleState()
                   assert.equal(actualState.toString(), expectedState)
               })
+
+              it("initializes upkeep interval correctly", async function () {
+                  const expectedInterval = networkConfig[chainId]["keepersUpdateInterval"]
+                  assert.equal(interval.toString(), expectedInterval)
+              })
           })
 
           describe("enterRaffle", async function () {
@@ -43,8 +50,12 @@ const { developmentChains } = require("../../helper-hardhat-config")
                   )
               })
 
-              it.skip("reverts when the raffle state is not open", async function () {
-                  raffle.requestRandomWinner()
+              it.skip("reverts when the raffle is calculating", async function () {
+                  await raffle.enterRaffle({ value: raffleEntranceFee })
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
+                  await network.provider.send("evm_mine", [])
+                  // We pretend to be a Chainlink Keeper
+                  await raffle.performUpkeep([])
                   await expect(raffle.enterRaffle({ value: raffleEntranceFee })).to.be.revertedWith(
                       "Raffle__NotOpen"
                   )

@@ -2,7 +2,7 @@ const { network, ethers } = require("hardhat")
 const { developmentChains, networkConfig } = require("../helper-hardhat-config")
 const { verify } = require("../utils/verify.js")
 
-const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("30")
+const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("4")
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
     const { deploy, log } = deployments
@@ -16,7 +16,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 
         // get subscriptionId
         const txResponse = await vrfCoordinatorV2Mock.createSubscription()
-        const txReceipt = await txResponse.wait(1)
+        const txReceipt = await txResponse.wait()
         subscriptionId = txReceipt.events[0].args.subId
         await vrfCoordinatorV2Mock.fundSubscription(subscriptionId, VRF_SUB_FUND_AMOUNT)
     } else {
@@ -27,8 +27,16 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     const entranceFee = networkConfig[chainId]["entranceFee"]
     const gasLane = networkConfig[chainId]["gasLane"]
     const callbackGasLimit = networkConfig[chainId]["callbackGasLimit"]
+    const keepersUpdateInterval = networkConfig[chainId]["keepersUpdateInterval"]
 
-    const args = [vrfCoordinatorV2Address, entranceFee, gasLane, subscriptionId, callbackGasLimit]
+    const args = [
+        vrfCoordinatorV2Address,
+        entranceFee,
+        gasLane,
+        subscriptionId,
+        callbackGasLimit,
+        keepersUpdateInterval,
+    ]
     const raffle = await deploy("Raffle", {
         from: deployer,
         args: args,
