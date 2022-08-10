@@ -1,5 +1,5 @@
 const { assert, expect } = require("chai")
-const { getNamedAccounts, deployments, ethers } = require("hardhat")
+const { getNamedAccounts, deployments, ethers, network } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
 
 !developmentChains.includes(network.name)
@@ -48,6 +48,49 @@ const { developmentChains } = require("../../helper-hardhat-config")
                       raffle,
                       "RaffleEnter"
                   )
+              })
+          })
+
+          describe.skip("fulfillRandomWords", async function () {
+              beforeEach(async function () {
+                  await raffle.enterRaffle({ value: raffleEntranceFee })
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
+                  await network.provider.send("evm_mine", [])
+              })
+
+              it("picks a winner, resets the lottery and sends money", async function () {
+                  const additionalEntrants = 3
+                  const startingAccountIndex = 1 // deployer = 0
+                  const account = await ethers.getSigners()
+                  for (
+                      let i = startingAccountIndex;
+                      i < startingAccountIndex + additionalEntrants;
+                      i++
+                  ) {
+                      const accountConnectedRaffle = raffle.connect(account[i])
+                      await accountConnectedRaffle.enterRaffle({ value: raffleEntranceFee })
+                  }
+                  //   const startingTimeStamp = await raffle.getLastestTimeStamp()
+                  await new Promise(async (resolve, reject) => {
+                      raffle.once("WinnerPicked", async () => {
+                          try {
+                              const recentWinner = await raffle.getRecentWinner()
+                              //   const raffleState = await raffle.getRaffleState()
+                              //   const endingTimeStamp = await raffle.getLastestTimeStamp()
+
+                              assert.equal(recentWinner)
+                          } catch (e) {
+                              reject(e)
+                          }
+                          resolve()
+                      })
+                      //   const tx = await raffle.performUpkeep([])
+                      //   const txReceipt = await tx.wait(1)
+                      await vrfCoordinatorV2Mock.fulfillRandomWords(
+                          txReceipt.events[1].args.requestId,
+                          raffle.address
+                      )
+                  })
               })
           })
       })
