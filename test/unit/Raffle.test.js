@@ -27,6 +27,12 @@ const { developmentChains } = require("../../helper-hardhat-config")
                   const actualEntranceFee = await raffle.getEntranceFee()
                   assert.equal(actualEntranceFee.toString(), expectedEntranceFee.toString())
               })
+
+              it("initializes lottery state as open", async function () {
+                  const expectedState = "0" // OPEN
+                  const actualState = await raffle.getRaffleState()
+                  assert.equal(actualState.toString(), expectedState)
+              })
           })
 
           describe("enterRaffle", async function () {
@@ -34,6 +40,13 @@ const { developmentChains } = require("../../helper-hardhat-config")
                   const sentValue = ethers.utils.parseEther("0.009")
                   await expect(raffle.enterRaffle({ value: sentValue })).to.be.revertedWith(
                       "Raffle__NotEnoughETHEntered"
+                  )
+              })
+
+              it.skip("reverts when the raffle state is not open", async function () {
+                  raffle.requestRandomWinner()
+                  await expect(raffle.enterRaffle({ value: raffleEntranceFee })).to.be.revertedWith(
+                      "Raffle__NotOpen"
                   )
               })
 
