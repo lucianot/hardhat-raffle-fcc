@@ -4,7 +4,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
 !developmentChains.includes(network.name)
     ? describe.skip
-    : describe("Raffle Unit Tests", async function () {
+    : describe("Raffle Unit Tests", function () {
           let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer, interval
           const chainId = network.config.chainId
 
@@ -17,7 +17,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               interval = await raffle.getInterval()
           })
 
-          describe("constructor", async function () {
+          describe("constructor", function () {
               it("initializes VRF coordinator correctly", async function () {
                   const expectedVrfCoordinator = vrfCoordinatorV2Mock.address
                   const actualVrfCoordinator = await raffle.getVrfCoordinator()
@@ -42,7 +42,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
           })
 
-          describe("enterRaffle", async function () {
+          describe("enterRaffle", function () {
               it("reverts when the sent value is too low", async function () {
                   const sentValue = ethers.utils.parseEther("0.009")
                   await expect(raffle.enterRaffle({ value: sentValue })).to.be.revertedWith(
@@ -75,7 +75,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
           })
 
-          describe("checkUpkeep", async function () {
+          describe("checkUpkeep", function () {
               it("returns false if there are no players yet", async function () {
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -111,7 +111,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               })
           })
 
-          describe.skip("fulfillRandomWords", async function () {
+          describe.skip("fulfillRandomWords", function () {
               beforeEach(async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
