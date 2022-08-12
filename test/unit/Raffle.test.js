@@ -5,14 +5,15 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 !developmentChains.includes(network.name)
     ? describe.skip
     : describe("Raffle Unit Tests", function () {
-          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, deployer, interval
+          let raffle, vrfCoordinatorV2Mock, raffleEntranceFee, player, interval
           const chainId = network.config.chainId
 
           beforeEach(async function () {
-              deployer = (await getNamedAccounts()).deployer
+              accounts = await ethers.getSigners()
+              player = accounts[1].address
               await deployments.fixture(["all"])
-              raffle = await ethers.getContract("Raffle", deployer)
-              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
+              raffle = await ethers.getContract("Raffle", player)
+              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
               raffleEntranceFee = await raffle.getEntranceFee()
               interval = await raffle.getInterval()
           })
@@ -50,7 +51,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   )
               })
 
-              it.skip("reverts when the raffle is calculating", async function () {
+              it("reverts when the raffle is calculating", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -64,7 +65,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               it("records players when they enter", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   const actualPlayer = await raffle.getPlayer(0)
-                  assert.equal(actualPlayer, deployer)
+                  assert.equal(actualPlayer, player)
               })
 
               it("emits event on enter", async function () {
@@ -83,7 +84,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   assert(!upkeepNeeded)
               })
 
-              it.skip("returns false if raffle isn't open", async function () {
+              it("returns false if raffle isn't open", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -96,9 +97,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
               it("returns false if enough time hasn't passed", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
-                  await network.provider.send("evm_increaseTime", [interval.toNumber() - 1])
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() - 10])
                   await network.provider.send("evm_mine", [])
-                  const { upkeepNeeded } = await raffle.callStatic.checkUpkeep([])
+                  const { upkeepNeeded } = await raffle.callStatic.checkUpkeep("0x")
                   assert(!upkeepNeeded)
               })
 
@@ -112,7 +113,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
           })
 
           describe("performUpkeep", function () {
-              it.skip("only runs if checkUpkeep is true", async function () {
+              it("only runs if checkUpkeep is true", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -125,7 +126,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       "Raffle__UpkeepNotNeeded"
                   )
               })
-              it.skip("updates the raffleState to calculating", async function () {
+              it("updates the raffleState to calculating", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -134,7 +135,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   const raffleState = await raffle.getRaffleState()
                   assert(raffleState.toString() == "1")
               })
-              it.skip("emits event", async function () {
+              it("emits event", async function () {
                   await raffle.enterRaffle({ value: raffleEntranceFee })
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
                   await network.provider.send("evm_mine", [])
@@ -161,7 +162,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   ).to.be.revertedWith("nonexistent request")
               })
 
-              it.skip("picks a winner, resets the lottery and sends money", async function () {
+              it("picks a winner, resets the lottery and sends money", async function () {
                   const additionalEntrants = 3
                   const startingAccountIndex = 1 // deployer = 0
                   const account = await ethers.getSigners()
@@ -176,44 +177,35 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   const startingTimeStamp = await raffle.getLastTimeStamp()
 
                   await new Promise(async (resolve, reject) => {
-                      console.log("Creating promise...")
                       raffle.once("WinnerPicked", async () => {
-                          console.log("Found the event!")
+                          console.log("WinnerPicked avent found!")
                           try {
                               const recentWinner = await raffle.getRecentWinner()
-                              console.log(recentWinner)
-                              console.log(accounts[0])
-                              console.log(accounts[1])
-                              console.log(accounts[2])
-                              console.log(accounts[3])
-
                               const raffleState = await raffle.getRaffleState()
-                              const endingTimeStamp = await raffle.getLastestTimeStamp()
-                              const numPlayers = await getNumPlayers()
+                              const endingTimeStamp = await raffle.getLastTimeStamp()
+                              const numPlayers = await raffle.getNumPlayers()
                               const winnerEndingBalance = await accounts[1].getBalance()
                               assert.equal(numPlayers.toString(), "0")
                               assert.equal(raffleState.toString(), "0")
-                              assert.equal(endingTimeStamp > startingTimeStamp)
-                              assert.equal(recentWinner)
+                              assert(endingTimeStamp > startingTimeStamp)
+                              assert.equal(recentWinner.toString(), accounts[1].address)
                               assert.equal(
                                   winnerEndingBalance.toString(),
-                                  winnerStartingBalance.add(
-                                      raffleEntranceFee
-                                          .mult(additionalEntrants)
-                                          .add(raffleEntranceFee)
-                                          .toString()
-                                  )
+                                  winnerStartingBalance
+                                      .add(
+                                          raffleEntranceFee
+                                              .mul(additionalEntrants)
+                                              .add(raffleEntranceFee)
+                                      )
+                                      .toString()
                               )
                           } catch (e) {
                               reject(e)
                           }
                           resolve()
                       })
-                      console.log("Running performUpkeep...")
                       const tx = await raffle.performUpkeep([])
-                      console.log("Mining...")
                       const txReceipt = await tx.wait(1)
-                      console.log("Running fullfillRandomWords...")
                       const winnerStartingBalance = await accounts[1].getBalance()
                       await vrfCoordinatorV2Mock.fulfillRandomWords(
                           txReceipt.events[1].args.requestId,
