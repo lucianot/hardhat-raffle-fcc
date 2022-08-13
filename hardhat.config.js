@@ -40,9 +40,14 @@ module.exports = {
         currency: "USD",
         outputFile: "gas-report.txt",
         noColors: true,
-        coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+        coinmarketcap: COINMARKETCAP_API_KEY,
+    },
+    etherscan: {
+        apiKey: {
+            rinkeby: ETHERSCAN_API_KEY,
+        },
     },
     mocha: {
-        timeout: 300000,
+        timeout: 500000, // 500 seconds max for running tests
     },
 }

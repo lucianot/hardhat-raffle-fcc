@@ -48,8 +48,10 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     })
 
     // Manually add consumer (raffle), otherwise performUpkeep does not run
-    const addTxResponse = await vrfCoordinatorV2Mock.addConsumer(subscriptionId, raffle.address) // REMOVE
-    const addTxReceipt = await addTxResponse.wait()
+    if (developmentChains.includes(network.name)) {
+        const addTxResponse = await vrfCoordinatorV2Mock.addConsumer(subscriptionId, raffle.address) // REMOVE
+        await addTxResponse.wait()
+    }
 
     // Verify if actual blockchain
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
